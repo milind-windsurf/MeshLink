@@ -459,28 +459,35 @@ MeshLinkWriterXerces::writeMeshFace(xercesc_3_2::DOMElement *sheet,
 
     MLINT faceType = reference ? count : numInds;
     // etype
-    bool triFace = 3 == faceType ? true : false;
-    if (triFace) {
+    if (faceType == 3) {
         node->setAttribute(X("etype"), X("Tri3"));
     }
-    else {
+    else if (faceType == 4) {
         node->setAttribute(X("etype"), X("Quad4"));
     }
+    else if (faceType >= 5) {
+        std::string polyType = "Poly" + std::to_string(faceType);
+        node->setAttribute(X("etype"), X(polyType.c_str()));
+    }
+    else {
+        std::cout << "MeshFace: unsupported face type with " << faceType << " vertices" << std::endl;
+        return false;
+    }
+    
+    bool triFace = (faceType == 3);
 
     // Add text node containing face info
     DOMText *faceData;
     if (!reference && compress_) {
         // Get vector of all the face indices
         std::vector<int> indices;
-        indices.reserve(faces.size() * (triFace ? 3 : 4));
+        indices.reserve(faces.size() * faceType);
         for (auto face : faces) {
-            // Indices
-            face->getInds(inds, &numInds);
-            indices.push_back((int)inds[0]);
-            indices.push_back((int)inds[1]);
-            indices.push_back((int)inds[2]);
-            if (!triFace) {
-                indices.push_back((int)inds[3]);
+            // Get all indices for this face
+            std::vector<MLINT> faceIndices;
+            face->getAllInds(faceIndices);
+            for (MLINT index : faceIndices) {
+                indices.push_back((int)index);
             }
         }
         XMLByte *encodedData{ nullptr };
@@ -519,10 +526,11 @@ MeshLinkWriterXerces::writeMeshFace(xercesc_3_2::DOMElement *sheet,
             }
             if (!reference) {
                 // Indices
-                face->getInds(inds, &numInds);
-                os << inds[0] << " " << inds[1] << " " << inds[2];
-                if (!triFace) {
-                    os << " " << inds[3];
+                std::vector<MLINT> faceIndices;
+                face->getAllInds(faceIndices);
+                for (size_t i = 0; i < faceIndices.size(); ++i) {
+                    if (i > 0) os << " ";
+                    os << faceIndices[i];
                 }
                 if (index == count) {
                     os << "\n\t";

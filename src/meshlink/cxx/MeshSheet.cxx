@@ -276,6 +276,64 @@ MeshSheet::addFace(
     return true;
 }
 
+bool
+MeshSheet::addFace(const std::vector<MLINT>& indices,
+    MLINT mid,
+    MLINT aref,
+    MLINT gref,
+    const std::string &name,
+    const std::vector<ParamVertex*>& paramVerts,
+    bool mapID)
+{
+    MeshFace *face = new MeshFace(indices, mid, aref, gref, name, paramVerts);
+    MeshTopo *existing = getMeshFaceByName(face->name_);
+    if (existing) {
+        delete face;
+        return false;
+    }
+
+    meshFaceNameMap_[face->getName()] = face;
+    faceMap_[face->getHash()] = face;
+    if (mapID) {
+        meshFaceIDToNameMap_[mid] = face->getName();
+    }
+
+    face->setOrderCounter(faceCounter_++);
+    return true;
+}
+
+bool
+MeshSheet::addFace(
+    const std::string &ref,
+    const std::vector<MLINT>& indices,
+    MLINT mid,
+    MLINT aref,
+    MLINT gref,
+    const std::string &name,
+    const std::vector<ParamVertex*>& paramVerts,
+    bool mapID)
+{
+    MeshFace *face = new MeshFace(ref, indices, mid, aref, gref, name, paramVerts);
+    MeshTopo *existing = getMeshFaceByName(face->name_);
+    if (existing) {
+        delete face;
+        return false;
+    }
+
+    meshFaceNameMap_[face->getName()] = face;
+
+    if (!face->getRef().empty()) {
+        meshFaceRefToNameMap_[face->getRef()] = face->getName();
+    }
+
+    if (mapID) {
+        meshFaceIDToNameMap_[mid] = face->getName();
+    }
+
+    face->setOrderCounter(faceCounter_++);
+    return true;
+}
+
 
 // Find a face in the associativity data
 MeshFace *
@@ -288,6 +346,18 @@ MeshSheet::findFaceByInds(MLINT i1, MLINT i2, MLINT i3, MLINT i4) const
         return iter->second;
     }
     // unfound
+    return NULL;
+}
+
+MeshFace *
+MeshSheet::findFaceByInds(const std::vector<MLINT>& indices) const
+{
+    pwiFnvHash::FNVHash hash = MeshFace::computeHash(indices);
+    std::map<pwiFnvHash::FNVHash, MeshFace*>::const_iterator iter;
+    iter = faceMap_.find(hash);
+    if (iter != faceMap_.end()) {
+        return iter->second;
+    }
     return NULL;
 }
 

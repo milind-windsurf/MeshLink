@@ -146,11 +146,53 @@ public:
         ParamVertex *pv1, ParamVertex *pv2,
         ParamVertex *pv3, ParamVertex *pv4, bool mapID);
 
+    /// \brief Add a polygon MeshFace to the MeshSheet using indices
+    ///
+    /// \param indices the point indices of the polygon face
+    /// \param mid unique ID of the mesh entity
+    /// \param aref the attribute reference ID (AttID) (optional)
+    /// \param gref the geometry reference ID
+    /// \param name the name of the mesh entity
+    /// \param paramVerts (optional) the ParamVertex objects associated with the face points
+    /// \param mapID whether to map the unique ID to the entity name
+    virtual bool addFace(const std::vector<MLINT>& indices,
+        MLINT mid,
+        MLINT aref,
+        MLINT gref,
+        const std::string &name,
+        const std::vector<ParamVertex*>& paramVerts = std::vector<ParamVertex*>(),
+        bool mapID = false);
+
+    /// \brief Add a polygon MeshFace to the MeshSheet using reference
+    ///
+    /// \param ref the application-defined reference data for the face
+    /// \param indices the point indices of the polygon face
+    /// \param mid unique ID of the mesh entity
+    /// \param aref the attribute reference ID (AttID) (optional)
+    /// \param gref the geometry reference ID
+    /// \param name the name of the mesh entity
+    /// \param paramVerts (optional) the ParamVertex objects associated with the face points
+    /// \param mapID whether to map the unique ID to the entity name
+    virtual bool addFace(
+        const std::string &ref,
+        const std::vector<MLINT>& indices,
+        MLINT mid,
+        MLINT aref,
+        MLINT gref,
+        const std::string &name,
+        const std::vector<ParamVertex*>& paramVerts = std::vector<ParamVertex*>(),
+        bool mapID = false);
+
 
     /// \brief Find a MeshFace by name
     ///
     /// \param name the name of the desired face
     virtual MeshFace * getMeshFaceByName(const std::string &name) const;
+
+    /// \brief Find a MeshFace by its polygon indices
+    ///
+    /// \param indices the point indices of the polygon face to find
+    MeshFace *findFaceByInds(const std::vector<MLINT>& indices) const;
 
     /// \brief Find a MeshFace by reference
     ///

@@ -1696,12 +1696,29 @@ MeshLinkParserXerces::parseMeshFace(MeshModel *model,
         }
 
         std::string etype = attrs[iattr];
+        int vertexCount = 0;
+        bool isPolygon = false;
         triFace = false;
+        
         if ("Tri3" == etype) {
             triFace = true;
+            vertexCount = 3;
         }
         else if ("Quad4" == etype) {
             triFace = false;
+            vertexCount = 4;
+        }
+        else if (etype.substr(0, 4) == "Poly" && etype.length() > 4) {
+            std::string countStr = etype.substr(4);
+            std::istringstream iss(countStr);
+            iss >> vertexCount;
+            if (vertexCount >= 3) {
+                isPolygon = true;
+                triFace = false;
+            } else {
+                std::cout << "MeshFace: invalid polygon vertex count in etype: " << etype << std::endl;
+                return false;
+            }
         }
         else {
             std::cout << "MeshFace: illegal etype value: " <<
@@ -1769,7 +1786,49 @@ MeshLinkParserXerces::parseMeshFace(MeshModel *model,
             MLINT i1, i2, i3, i4;
             ParamVertex *pv1, *pv2, *pv3, *pv4;
             for (int icnt = 0; icnt < count; ++icnt) {
-                if (triFace) {
+                if (isPolygon) {
+                    // Handle arbitrary polygon
+                    std::vector<MLINT> indices(vertexCount);
+                    std::vector<ParamVertex*> paramVerts(vertexCount);
+                    
+                    // Read vertex indices
+                    for (int i = 0; i < vertexCount; ++i) {
+                        is >> indices[i];
+                        paramVerts[i] = parentMeshTopo->getParamVertByVref(std::to_string(indices[i]));
+                    }
+                    
+                    // Add face edges for polygon
+                    for (int i = 0; i < vertexCount; ++i) {
+                        int next = (i + 1) % vertexCount;
+                        if (model) {
+                            model->addFaceEdge(indices[i], indices[next], mid, aref, gref, 
+                                             paramVerts[i], paramVerts[next]);
+                            model->addFaceEdgePoint(indices[i], mid, aref, gref, paramVerts[i]);
+                        }
+                        if (meshSheet) {
+                            meshSheet->addFaceEdge(indices[i], indices[next], mid, aref, gref, 
+                                                 paramVerts[i], paramVerts[next]);
+                        }
+                    }
+                    
+                    // Add the polygon face
+                    if (model) {
+                        bool result = model->addFace(indices, mid, aref, gref, name, paramVerts, mapID);
+                        if (!result) {
+                            printf("MeshFace: error storing polygon\n   %s\n",
+                                (char*)faceArrayNode->getNodeName());
+                        }
+                    }
+                    
+                    if (meshSheet) {
+                        bool result = meshSheet->addFace(indices, mid, aref, gref, name, paramVerts, mapID);
+                        if (!result) {
+                            printf("MeshFace: error storing polygon\n   %s\n",
+                                (char*)faceArrayNode->getNodeName());
+                        }
+                    }
+                }
+                else if (triFace) {
                     // 1 group of 3
                     is >> i1 >> i2 >> i3;
                     // Map parametric verts from parent

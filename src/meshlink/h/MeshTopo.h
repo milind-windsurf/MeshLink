@@ -617,6 +617,39 @@ public:
         ParamVertex *pv1, ParamVertex *pv2,
         ParamVertex *pv3, ParamVertex *pv4);
 
+    /// \brief Construct a polygon MeshFace with arbitrary vertex count
+    ///
+    /// \param indices the vector of point indices defining the polygon face
+    /// \param mid unique ID of the mesh face
+    /// \param aref the attribute reference ID (AttID) (optional)
+    /// \param gref the geometry reference ID
+    /// \param name the name of the mesh face
+    /// \param paramVerts (optional) the ParamVertex objects associated with the face points
+    MeshFace(const std::vector<MLINT>& indices,
+        MLINT mid,
+        MLINT aref,
+        MLINT gref,
+        const std::string &name,
+        const std::vector<ParamVertex*>& paramVerts = std::vector<ParamVertex*>());
+
+    /// \brief Construct a polygon MeshFace from application-defined reference data
+    ///
+    /// \param ref the application-defined reference of the mesh face
+    /// \param indices the vector of point indices defining the polygon face
+    /// \param mid unique ID of the mesh face
+    /// \param aref the attribute reference ID (AttID) (optional)
+    /// \param gref the geometry reference ID
+    /// \param name the name of the mesh face
+    /// \param paramVerts (optional) the ParamVertex objects associated with the face points
+    MeshFace(
+        const std::string &ref,
+        const std::vector<MLINT>& indices,
+        MLINT mid,
+        MLINT aref,
+        MLINT gref,
+        const std::string &name,
+        const std::vector<ParamVertex*>& paramVerts = std::vector<ParamVertex*>());
+
     /// \brief Destructor
     ~MeshFace();
 
@@ -627,11 +660,17 @@ public:
 
     /// \brief Return array of vertex indices associated with the MeshFace
     ///
-    /// N.B. Assumes inds is array of size 4.
+    /// N.B. For legacy faces, assumes inds is array of size 4.
+    /// For polygon faces, returns up to the first 4 indices for compatibility.
     ///
     /// \param[in,out] inds the array of point indices
     /// \param[out] numInds the number of valid point indices in the array
     void getInds(MLINT *inds, MLINT *numInds) const;
+
+    /// \brief Return all vertex indices for polygon faces
+    ///
+    /// \param[out] indices vector to store all vertex indices
+    void getAllInds(std::vector<MLINT>& indices) const;
 
     /// \brief Return array of ParamVertices associated with the MeshFace
     /// \return the number of ParamVertex objects in the array
@@ -643,8 +682,12 @@ public:
     /// \brief Return vector of pointers to ParamVertices associated with the MeshFace
     void getParamVerts(std::vector<ParamVertex*> &pvs) const {
         pvs.clear();
-        for (int i = 0; i < 4; ++i) {
-            if (NULL != paramVerts_[i]) pvs.push_back(paramVerts_[i]);
+        if (!paramVertsVector_.empty()) {
+            pvs = paramVertsVector_;
+        } else {
+            for (int i = 0; i < 4; ++i) {
+                if (NULL != paramVerts_[i]) pvs.push_back(paramVerts_[i]);
+            }
         }
         return;
     }
@@ -652,11 +695,30 @@ public:
     /// \brief Return number of ParamVertices associated with the MeshFace
     MLINT getNumParamVerts() const
     {
-        MLINT count = 0;
-        for (int i = 0; i < 4; ++i) {
-            if (NULL != paramVerts_[i]) ++count;
+        if (!paramVertsVector_.empty()) {
+            return static_cast<MLINT>(paramVertsVector_.size());
+        } else {
+            MLINT count = 0;
+            for (int i = 0; i < 4; ++i) {
+                if (NULL != paramVerts_[i]) ++count;
+            }
+            return count;
         }
-        return count;
+    }
+
+    /// \brief Return the number of vertices in this face
+    MLINT getVertexCount() const
+    {
+        if (!vertexIndices_.empty()) {
+            return static_cast<MLINT>(vertexIndices_.size());
+        } else {
+            MLINT count = 0;
+            if (i1_ != MESH_TOPO_INDEX_UNUSED) ++count;
+            if (i2_ != MESH_TOPO_INDEX_UNUSED) ++count;
+            if (i3_ != MESH_TOPO_INDEX_UNUSED) ++count;
+            if (i4_ != MESH_TOPO_INDEX_UNUSED) ++count;
+            return count;
+        }
     }
 
 private:
@@ -680,16 +742,24 @@ private:
     static pwiFnvHash::FNVHash computeHash(MLINT i1, MLINT i2, MLINT i3,
         MLINT i4 = MESH_TOPO_INDEX_UNUSED);
 
-    /// The index of the first point
+    /// Return a hash value for the given polygon indices
+    static pwiFnvHash::FNVHash computeHash(const std::vector<MLINT>& indices);
+
+    /// The index of the first point (legacy support)
     MLINT i1_;
-    /// The index of the second point
+    /// The index of the second point (legacy support)
     MLINT i2_;
-    /// The index of the third point
+    /// The index of the third point (legacy support)
     MLINT i3_;
-    /// The index of the fourth point
+    /// The index of the fourth point (legacy support)
     MLINT i4_;
-    /// The array of ParamVertex objects associated with the face points
+    /// The array of ParamVertex objects associated with the face points (legacy support)
     ParamVertex * paramVerts_[4];
+    
+    /// The vertex indices for polygon faces (dynamic storage)
+    std::vector<MLINT> vertexIndices_;
+    /// The ParamVertex objects for polygon faces (dynamic storage)
+    std::vector<ParamVertex*> paramVertsVector_;
 };
 
 typedef std::map<std::string, MeshFace *> MeshFaceNameMap;

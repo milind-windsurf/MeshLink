@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<MeshLink version="1.0" xmlns="https://pointwise.com">
+    <!-- Test file for polygon face support -->
+    <MeshFile filename="test_polygon.xml">
+        <MeshModelReference ref="1" name="PolygonTestModel" mid="1" gref="1">
+            <!-- Test points for polygon faces -->
+            <ParamVertex vref="1" gref="1" dim="2">0.0 0.0</ParamVertex>
+            <ParamVertex vref="2" gref="1" dim="2">1.0 0.0</ParamVertex>
+            <ParamVertex vref="3" gref="1" dim="2">1.0 1.0</ParamVertex>
+            <ParamVertex vref="4" gref="1" dim="2">0.0 1.0</ParamVertex>
+            <ParamVertex vref="5" gref="1" dim="2">0.5 1.5</ParamVertex>
+            <ParamVertex vref="6" gref="1" dim="2">2.0 0.5</ParamVertex>
+            
+            <MeshSheet name="PolygonSheet" mid="2" gref="1">
+                <!-- Pentagon face (Poly5) -->
+                <MeshFace etype="Poly5" format="text" count="1">
+                 1 2 3 4 5
+                </MeshFace>
+                
+                <!-- Hexagon face (Poly6) -->
+                <MeshFace etype="Poly6" format="text" count="1">
+                 1 2 6 3 4 5
+                </MeshFace>
+                
+                <!-- Traditional triangle for comparison -->
+                <MeshFace etype="Tri3" format="text" count="1">
+                 1 2 3
+                </MeshFace>
+                
+                <!-- Traditional quad for comparison -->
+                <MeshFace etype="Quad4" format="text" count="1">
+                 1 2 3 4
+                </MeshFace>
+            </MeshSheet>
+        </MeshModelReference>
+    </MeshFile>
+</MeshLink>

@@ -688,6 +688,62 @@ MeshFace::MeshFace(
     }
 }
 
+MeshFace::MeshFace(const std::vector<MLINT>& indices,
+    MLINT mid,
+    MLINT aref,
+    MLINT gref,
+    const std::string &name,
+    const std::vector<ParamVertex*>& paramVerts) :
+    MeshTopo(mid, aref, gref, name),
+    i1_(MESH_TOPO_INDEX_UNUSED),
+    i2_(MESH_TOPO_INDEX_UNUSED),
+    i3_(MESH_TOPO_INDEX_UNUSED),
+    i4_(MESH_TOPO_INDEX_UNUSED),
+    vertexIndices_(indices)
+{
+    setName(name);
+    for (int n = 0; n < 4; ++n) {
+        paramVerts_[n] = NULL;
+    }
+    
+    for (ParamVertex* pv : paramVerts) {
+        if (pv) {
+            paramVertsVector_.push_back(new ParamVertex(*pv));
+        } else {
+            paramVertsVector_.push_back(NULL);
+        }
+    }
+}
+
+MeshFace::MeshFace(
+    const std::string &ref,
+    const std::vector<MLINT>& indices,
+    MLINT mid,
+    MLINT aref,
+    MLINT gref,
+    const std::string &name,
+    const std::vector<ParamVertex*>& paramVerts) :
+    MeshTopo(ref, mid, aref, gref, name),
+    i1_(MESH_TOPO_INDEX_UNUSED),
+    i2_(MESH_TOPO_INDEX_UNUSED),
+    i3_(MESH_TOPO_INDEX_UNUSED),
+    i4_(MESH_TOPO_INDEX_UNUSED),
+    vertexIndices_(indices)
+{
+    setName(name);
+    for (int n = 0; n < 4; ++n) {
+        paramVerts_[n] = NULL;
+    }
+    
+    for (ParamVertex* pv : paramVerts) {
+        if (pv) {
+            paramVertsVector_.push_back(new ParamVertex(*pv));
+        } else {
+            paramVertsVector_.push_back(NULL);
+        }
+    }
+}
+
 MeshFace::~MeshFace()
 {
     for (int n = 0; n < 4; ++n) {
@@ -695,24 +751,58 @@ MeshFace::~MeshFace()
             delete paramVerts_[n]; paramVerts_[n] = NULL;
         }
     }
+    
+    for (ParamVertex* pv : paramVertsVector_) {
+        if (pv) {
+            delete pv;
+        }
+    }
+    paramVertsVector_.clear();
 }
 
 void 
 MeshFace::getInds(MLINT *inds, MLINT *numInds) const {
-    inds[0] = i1_;
-    inds[1] = i2_;
-    inds[2] = i3_;
-    inds[3] = i4_;
-    *numInds = 0;
-    if (i1_ != MESH_TOPO_INDEX_UNUSED) ++(*numInds);
-    if (i2_ != MESH_TOPO_INDEX_UNUSED) ++(*numInds);
-    if (i3_ != MESH_TOPO_INDEX_UNUSED) ++(*numInds);
-    if (i4_ != MESH_TOPO_INDEX_UNUSED) ++(*numInds);
+    if (!vertexIndices_.empty()) {
+        *numInds = static_cast<MLINT>(vertexIndices_.size());
+        for (size_t i = 0; i < vertexIndices_.size() && i < 4; ++i) {
+            inds[i] = vertexIndices_[i];
+        }
+        for (size_t i = vertexIndices_.size(); i < 4; ++i) {
+            inds[i] = MESH_TOPO_INDEX_UNUSED;
+        }
+    } else {
+        inds[0] = i1_;
+        inds[1] = i2_;
+        inds[2] = i3_;
+        inds[3] = i4_;
+        *numInds = 0;
+        if (i1_ != MESH_TOPO_INDEX_UNUSED) ++(*numInds);
+        if (i2_ != MESH_TOPO_INDEX_UNUSED) ++(*numInds);
+        if (i3_ != MESH_TOPO_INDEX_UNUSED) ++(*numInds);
+        if (i4_ != MESH_TOPO_INDEX_UNUSED) ++(*numInds);
+    }
+}
+
+void 
+MeshFace::getAllInds(std::vector<MLINT>& indices) const {
+    indices.clear();
+    if (!vertexIndices_.empty()) {
+        indices = vertexIndices_;
+    } else {
+        if (i1_ != MESH_TOPO_INDEX_UNUSED) indices.push_back(i1_);
+        if (i2_ != MESH_TOPO_INDEX_UNUSED) indices.push_back(i2_);
+        if (i3_ != MESH_TOPO_INDEX_UNUSED) indices.push_back(i3_);
+        if (i4_ != MESH_TOPO_INDEX_UNUSED) indices.push_back(i4_);
+    }
 }
 
 pwiFnvHash::FNVHash 
 MeshFace::getHash() const {
-    return computeHash(i1_, i2_, i3_, i4_);
+    if (!vertexIndices_.empty()) {
+        return computeHash(vertexIndices_);
+    } else {
+        return computeHash(i1_, i2_, i3_, i4_);
+    }
 }
 
 pwiFnvHash::FNVHash 
@@ -732,6 +822,18 @@ MeshFace::computeHash(MLINT i1, MLINT i2, MLINT i3, MLINT i4) {
     hash = pwiFnvHash::hash(i2, hash);
     hash = pwiFnvHash::hash(i3, hash);
     hash = pwiFnvHash::hash(i4, hash);
+    return hash;
+}
+
+pwiFnvHash::FNVHash 
+MeshFace::computeHash(const std::vector<MLINT>& indices) {
+    std::vector<MLINT> sortedIndices = indices;
+    std::sort(sortedIndices.begin(), sortedIndices.end());
+
+    pwiFnvHash::FNVHash hash = pwiFnvHash::hashInit();
+    for (MLINT index : sortedIndices) {
+        hash = pwiFnvHash::hash(index, hash);
+    }
     return hash;
 }
 

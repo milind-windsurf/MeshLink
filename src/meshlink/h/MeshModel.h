@@ -385,6 +385,51 @@ public:
         ParamVertex *pv1, ParamVertex *pv2,
         ParamVertex *pv3, ParamVertex *pv4, bool mapID);
 
+    /// \brief Add a polygon MeshFace to the MeshModel using indices
+    ///
+    /// MeshFaces belong to MeshSheets, however, adding
+    /// them to the model is useful for access patterns
+    /// when working with a MeshModel.
+    ///
+    /// \param indices the point indices of the polygon face
+    /// \param mid unique ID of face
+    /// \param aref the attribute reference ID (AttID)
+    /// \param gref the geometry reference ID
+    /// \param name the name of the polygon face
+    /// \param paramVerts (optional) the ParamVertex objects associated with the face points
+    /// \param mapID whether to record the mapping of unique ID to name
+    bool addFace(const std::vector<MLINT>& indices,
+        MLINT mid,
+        MLINT aref,
+        MLINT gref,
+        std::string &name,
+        const std::vector<ParamVertex*>& paramVerts = std::vector<ParamVertex*>(),
+        bool mapID = false);
+
+    /// \brief Add a polygon MeshFace to the MeshModel using reference
+    ///
+    /// MeshFaces belong to MeshSheets, however, adding
+    /// them to the model is useful for access patterns
+    /// when working with a MeshModel.
+    ///
+    /// \param ref the application-defined reference of the face to add
+    /// \param indices the point indices of the polygon face
+    /// \param mid unique ID of face
+    /// \param aref the attribute reference ID (AttID)
+    /// \param gref the geometry reference ID
+    /// \param name the name of the polygon face
+    /// \param paramVerts (optional) the ParamVertex objects associated with the face points
+    /// \param mapID whether to record the mapping of unique ID to name
+    bool addFace(
+        std::string &ref,
+        const std::vector<MLINT>& indices,
+        MLINT mid,
+        MLINT aref,
+        MLINT gref,
+        std::string &name,
+        const std::vector<ParamVertex*>& paramVerts = std::vector<ParamVertex*>(),
+        bool mapID = false);
+
     /// \brief Find a (triangular or quadrilateral) face in the MeshSheet associativity data
     ///
     /// \param i1,i2,i3 the point indices of the desired triangular or quadrilateral face
@@ -422,6 +467,11 @@ public:
     ///
     /// \param name the name of the desired face
     MeshFace * getMeshFaceByName(const std::string &name) const;
+
+    /// \brief Find a MeshFace by its polygon indices
+    ///
+    /// \param indices the point indices of the polygon face to find
+    MeshFace *findFaceByInds(const std::vector<MLINT>& indices);
 
     /// \brief Find a MeshFace in the MeshModel using reference
     ///

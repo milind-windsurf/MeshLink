@@ -1011,6 +1011,60 @@ MeshModel::addFace(
     return true;
 }
 
+bool
+MeshModel::addFace(const std::vector<MLINT>& indices,
+    MLINT mid,
+    MLINT aref,
+    MLINT gref,
+    std::string &name,
+    const std::vector<ParamVertex*>& paramVerts,
+    bool mapID)
+{
+    MeshFace *face = new MeshFace(indices, mid, aref, gref, name, paramVerts);
+    MeshTopo *existing = getMeshFaceByName(face->name_);
+    if (existing) {
+        delete face;
+        return false;
+    }
+
+    faceMap_[face->getHash()] = face;
+    meshFaceNameMap_[face->getName()] = face;
+    if (mapID) {
+        meshFaceIDToNameMap_[mid] = face->getName();
+    }
+    return true;
+}
+
+bool
+MeshModel::addFace(
+    std::string &ref,
+    const std::vector<MLINT>& indices,
+    MLINT mid,
+    MLINT aref,
+    MLINT gref,
+    std::string &name,
+    const std::vector<ParamVertex*>& paramVerts,
+    bool mapID)
+{
+    MeshFace *face = new MeshFace(ref, indices, mid, aref, gref, name, paramVerts);
+    MeshTopo *existing = getMeshFaceByName(face->name_);
+    if (existing) {
+        delete face;
+        return false;
+    }
+
+    meshFaceNameMap_[face->getName()] = face;
+
+    if (!face->getRef().empty()) {
+        meshFaceRefToNameMap_[face->getRef()] = face->getName();
+    }
+
+    if (mapID) {
+        meshFaceIDToNameMap_[mid] = face->getName();
+    }
+    return true;
+}
+
 void
 MeshModel::getMeshFaces(std::vector<const MeshFace *> &faces) const
 {
@@ -1036,6 +1090,18 @@ MeshModel::findFaceByInds(MLINT i1, MLINT i2, MLINT i3, MLINT i4)
         return iter->second;
     }
     // unfound
+    return NULL;
+}
+
+MeshFace *
+MeshModel::findFaceByInds(const std::vector<MLINT>& indices)
+{
+    pwiFnvHash::FNVHash hash = MeshFace::computeHash(indices);
+    std::map<pwiFnvHash::FNVHash, MeshFace*>::iterator iter;
+    iter = faceMap_.find(hash);
+    if (iter != faceMap_.end()) {
+        return iter->second;
+    }
     return NULL;
 }
 
